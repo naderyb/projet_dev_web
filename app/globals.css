@@ -4,13 +4,32 @@
 @tailwind utilities;
 
 @layer base {
-  * {
-    @apply border-border;
+  :root {
+    --border: 240 5% 84%;
+    --input: 240 5% 84%;
+    --ring: 240 4.9% 65%;
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --radius: 0.5rem;
   }
+
+  .dark {
+    --border: 240 4% 16%;
+    --input: 240 4% 16%;
+    --ring: 240 5% 84%;
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 100%;
+  }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+
   body {
     @apply bg-background text-foreground;
   }
 }
+
 
 @layer components {
   .zellige-border {
