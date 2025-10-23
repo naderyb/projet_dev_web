@@ -1,0 +1,19 @@
+[00:00:01.265] Server  LOG     
+[00:00:01.266] Server  LOG        We detected TypeScript in your project and created a tsconfig.json file for you.
+[00:00:01.464] Server  LOG      ✓ Ready in 903ms
+[00:00:33.331] Server  LOG      ○ Compiling / ...
+[00:00:38.415] Server  ERROR    ⨯ ./app/globals.css
+Error evaluating Node.js code
+Error: It looks like you're trying to use `tailwindcss` directly as a PostCSS plugin. The PostCSS plugin has moved to a separate package, so to continue using Tailwind CSS with PostCSS you'll need to install `@tailwindcss/postcss` and update your PostCSS configuration.
+    [at nt (/home/ninja/Desktop/projet_dev_web/node_modules/tailwindcss/dist/lib.js:38:1629)]
+    [at <anonymous> (turbopack:///[turbopack-node]/transforms/postcss.ts:56:14)]
+    [at <anonymous>]
+    [at Module.init (turbopack:///[turbopack-node]/transforms/postcss.ts:43:33)]
+    [at run (turbopack:///[turbopack-node]/ipc/evaluate.ts:77:20)]
+
+Import trace:
+  Client Component Browser:
+    ./app/globals.css [Client Component Browser]
+    ./app/layout.tsx [Server Component]
+
+

@@ -1,0 +1,52 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Cairo:wght@400;500;600;700&display=swap");
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .zellige-border {
+    background: linear-gradient(45deg, #f2743e, #f5b22a, #22c55e, #f2743e);
+    background-size: 400% 400%;
+    animation: gradient 3s ease infinite;
+    padding: 2px;
+    border-radius: 12px;
+  }
+
+  .zellige-border > div {
+    background: white;
+    border-radius: 10px;
+    height: 100%;
+    width: 100%;
+  }
+
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+  }
+
+  .btn-primary {
+    @apply bg-terracotta-500 hover:bg-terracotta-600 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 hover:shadow-lg;
+  }
+
+  .btn-secondary {
+    @apply bg-sand-100 hover:bg-sand-200 text-terracotta-700 font-medium py-3 px-6 rounded-lg transition-all duration-200;
+  }
+}
+
+@keyframes gradient {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
