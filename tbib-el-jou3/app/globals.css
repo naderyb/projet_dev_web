@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+/* Optional reset (preflight is included automatically now) */
+/* Custom theme vars */
+:root {
+  --color-primary: #029e74;
+  --color-primary-light: #03c792;
+  --color-primary-dark: #017a5b;
+  --color-terracotta: #d17a22;
+  --color-terracotta-light: #e69943;
+  --color-terracotta-dark: #b5641a;
+  --color-deepblue: #0a3d62;
+  --color-deepblue-light: #0e5a8f;
+  --color-deepblue-dark: #072840;
+  --font-family-arabic: "Cairo", sans-serif;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+::-webkit-scrollbar-thumb {
+  background: #029e74;
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #017a5b;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fadeIn {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Zelij pattern overlay */
+.zelij-overlay {
+  position: relative;
+}
+.zelij-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("/patterns/zelij.svg");
+  opacity: 0.05;
+  pointer-events: none;
+}
