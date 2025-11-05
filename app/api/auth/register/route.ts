@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcrypt"; // Changed from bcryptjs to bcrypt for consistency
+import bcrypt from "bcrypt";
 import { Pool } from "pg";
 
+// Use the exact same pool configuration as your orders route
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
@@ -10,7 +11,7 @@ export async function POST(request: NextRequest) {
   try {
     const { name, email, phone, password } = await request.json();
 
-    console.log("Registration attempt for:", email); // Debug log
+    console.log("Registration attempt for:", email);
 
     if (!name || !email || !phone || !password) {
       return NextResponse.json(
@@ -42,14 +43,14 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Create new user
+    // Create new user - match the exact column order from your orders route
     const result = await pool.query(
       "INSERT INTO users (name, email, phone, password, created_at) VALUES ($1, $2, $3, $4, NOW()) RETURNING id, name, email",
       [name, email, phone, hashedPassword]
     );
 
     const user = result.rows[0];
-    console.log("User created successfully:", user.email); // Debug log
+    console.log("User created successfully:", user.email);
 
     return NextResponse.json(
       { message: "User created successfully", user: { id: user.id, name: user.name, email: user.email } },
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Registration error:", error);
     return NextResponse.json(
-      { message: "Database connection error. Please check your credentials." },
+      { message: "Internal server error" },
       { status: 500 }
     );
   }
