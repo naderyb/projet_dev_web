@@ -9,7 +9,7 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
-export const authOptions: NextAuthOptions = {
+const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -65,11 +65,8 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
-      if (token) {
-        // Ensure session.user exists and capture it in a local variable so TypeScript
-        // can safely allow assignment to its properties.
-        const user = session.user ?? (session.user = {} as any);
-        (user as any).id = token.id as string;
+      if (token && session.user) {
+        (session.user as any).id = token.id as string;
       }
       return session;
     },

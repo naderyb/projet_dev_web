@@ -67,13 +67,8 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
-      if (token) {
-        if (session.user) {
-          (session.user as any).id = token.id as string;
-        } else {
-          // Ensure user object exists on session before assigning id
-          (session as any).user = { id: token.id as string };
-        }
+      if (token && session.user) {
+        (session.user as any).id = token.id as string;
       }
       return session;
     },

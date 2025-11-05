@@ -1,7 +1,42 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../lib/prisma";
+import { Pool } from "pg";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../lib/auth";
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const restaurantId = searchParams.get('restaurantId');
+
+    let query = `
+      SELECT rv.*, u.name as user_name, r.name as restaurant_name
+      FROM reviews rv
+      JOIN users u ON rv.user_id = u.id
+      JOIN restaurants r ON rv.restaurant_id = r.id
+    `;
+    const params: any[] = [];
+
+    if (restaurantId) {
+      query += ' WHERE rv.restaurant_id = $1';
+      params.push(restaurantId);
+    }
+
+    query += ' ORDER BY rv.created_at DESC';
+
+    const result = await pool.query(query, params);
+    return NextResponse.json(result.rows);
+  } catch (error) {
+    console.error("Reviews fetch error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch reviews" },
+      { status: 500 }
+    );
+  }
+}
 
 export async function POST(request: Request) {
   try {
@@ -10,43 +45,41 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
+    const userResult = await pool.query(
+      "SELECT id FROM users WHERE email = $1",
+      [session.user.email]
+    );
 
-    if (!user) {
+    if (userResult.rows.length === 0) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const body = await request.json();
-    const { restaurantId, rating, comment } = body;
+    const userId = userResult.rows[0].id;
+    const { restaurantId, rating, comment } = await request.json();
 
-    const review = await prisma.review.create({
-      data: {
-        userId: user.id,
-        restaurantId,
-        rating,
-        comment,
-      },
-      include: {
-        user: { select: { name: true } },
-      },
-    });
+    // Check if user already reviewed this restaurant
+    const existingReview = await pool.query(
+      "SELECT id FROM reviews WHERE user_id = $1 AND restaurant_id = $2",
+      [userId, restaurantId]
+    );
 
-    // Update restaurant rating
-    const reviews = await prisma.review.findMany({
-      where: { restaurantId },
-    });
-    const total = reviews.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0);
-    const avgRating = reviews.length ? total / reviews.length : 0;
+    if (existingReview.rows.length > 0) {
+      return NextResponse.json(
+        { error: "You have already reviewed this restaurant" },
+        { status: 400 }
+      );
+    }
 
-    await prisma.restaurant.update({
-      where: { id: restaurantId },
-      data: { rating: avgRating },
-    });
+    const result = await pool.query(
+      `INSERT INTO reviews (user_id, restaurant_id, rating, comment, created_at)
+       VALUES ($1, $2, $3, $4, NOW())
+       RETURNING *`,
+      [userId, restaurantId, rating, comment]
+    );
 
-    return NextResponse.json(review, { status: 201 });
+    return NextResponse.json(result.rows[0], { status: 201 });
   } catch (error) {
+    console.error("Review creation error:", error);
     return NextResponse.json(
       { error: "Failed to create review" },
       { status: 500 }
