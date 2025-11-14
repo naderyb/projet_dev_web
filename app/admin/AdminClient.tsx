@@ -48,7 +48,7 @@ export default function AdminClient() {
   const [orderDetails, setOrderDetails] = useState<any>(null); // items + tracking
 
   // default to orders and remove analytics tab
-  const [activeTab, setActiveTab] = useState<"orders" | "restaurants" | "settings">("orders");
+  const [activeTab, setActiveTab] = useState<"orders" | "restaurants">("orders");
 
   // admin display name & logout modal
   const [adminName, setAdminName] = useState<string | null>(null);
@@ -545,7 +545,6 @@ export default function AdminClient() {
             <nav className="flex items-center space-x-2 ml-6">
               <button className={`px-3 py-1 rounded ${activeTab === "orders" ? "bg-orange-100 text-orange-600" : "text-gray-600"}`} onClick={() => setActiveTab("orders")}>Orders</button>
               <button className={`px-3 py-1 rounded ${activeTab === "restaurants" ? "bg-orange-100 text-orange-600" : "text-gray-600"}`} onClick={() => setActiveTab("restaurants")}>Restaurants</button>
-              <button className={`px-3 py-1 rounded ${activeTab === "settings" ? "bg-orange-100 text-orange-600" : "text-gray-600"}`} onClick={() => setActiveTab("settings")}>Settings</button>
             </nav>
            </div>
  
