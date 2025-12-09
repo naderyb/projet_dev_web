@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Star, Clock, Truck, Search, Filter, MapPin } from "lucide-react";
-import { useCart } from "../context/CartContext";
 import toast from "react-hot-toast";
 
 interface Restaurant {

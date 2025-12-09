@@ -66,11 +66,6 @@ export default function HeroSection() {
                 Order Now
                 <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />
               </Link>
-              
-              <button className="btn-outline group">
-                <Play className="mr-2 w-5 h-5" />
-                Watch Video
-              </button>
             </motion.div>
 
             {/* Stats */}

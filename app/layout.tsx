@@ -5,7 +5,6 @@ import { Toaster } from "react-hot-toast";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import BackgroundAnimation from "./components/BackgroundAnimation";
-import { CartProvider } from "./context/CartContext"; // Changed import
 import SessionProvider from "./components/SessionProvider";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -44,9 +43,7 @@ export default function RootLayout({
         <SessionProvider>
           <div className="zelij-overlay">
             
-            <BackgroundAnimation />
-            <CartProvider>
-                
+            <BackgroundAnimation />                
                 <main className="min-h-screen">{children}</main>
 
                 {/* wrap Navbar with id so admin UI can hide it via DOM */}
@@ -55,7 +52,6 @@ export default function RootLayout({
                 </div>
 
                 <Footer />
-            </CartProvider>
           </div>
           <Toaster position="top-right" />
         </SessionProvider>

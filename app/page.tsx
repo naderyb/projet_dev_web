@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, MapPin, Clock, Star, ChefHat, Utensils, Heart, ArrowRight } from "lucide-react";
+import { Search, MapPin, Clock, ChefHat, Heart, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import RestaurantCard from "./components/RestaurantCard";
 import toast from "react-hot-toast";
@@ -34,7 +34,6 @@ export default function Home() {
   const [menuModalOpen, setMenuModalOpen] = useState(false);
   const [currentMenu, setCurrentMenu] = useState<any[]>([]);
   // cart: persisted per-restaurant in localStorage
-  const [cart, setCart] = useState<{ menu_item_id: number; name: string; price: number; qty: number }[]>([]);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [phoneInput, setPhoneInput] = useState("");
@@ -114,20 +113,6 @@ export default function Home() {
     setSelectedRestaurant({ ...restaurant, raw: null });
     setMenuModalOpen(true);
     // Load saved cart for this restaurant from localStorage
-    try {
-      const key = `cart:restaurant:${restaurant.id}`;
-      const raw = localStorage.getItem(key);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) setCart(parsed);
-        else setCart([]);
-      } else {
-        setCart([]);
-      }
-    } catch (e) {
-      console.warn("Failed to load cart from storage", e);
-      setCart([]);
-    }
     setDeliveryAddress("");
     setPhoneInput("");
     try {
@@ -148,55 +133,18 @@ export default function Home() {
     }
   };
 
-  const saveCartForRestaurant = (restaurantId: string | number, nextCart: typeof cart) => {
-    try {
-      const key = `cart:restaurant:${restaurantId}`;
-      localStorage.setItem(key, JSON.stringify(nextCart));
-    } catch (e) {
-      console.warn("Failed to save cart", e);
-    }
-  };
 
-  const addToCart = (item: any) => {
-    setCart((prev) => {
-      const idx = prev.findIndex((p) => Number(p.menu_item_id) === Number(item.id));
-      const next = idx >= 0
-        ? prev.map((p, i) => i === idx ? { ...p, qty: p.qty + 1 } : p)
-        : [...prev, { menu_item_id: Number(item.id), name: item.name, price: Number(item.price || 0), qty: 1 }];
-      // persist
-      if (selectedRestaurant?.id) saveCartForRestaurant(selectedRestaurant.id, next);
-      toast.success("Added to cart");
-      return next;
-    });
-  };
-
-  const updateQty = (menu_item_id: number, qty: number) => {
-    setCart((prev) => {
-      const next = prev.map((p) => (p.menu_item_id === menu_item_id ? { ...p, qty: Math.max(0, qty) } : p)).filter(p => p.qty > 0);
-      if (selectedRestaurant?.id) saveCartForRestaurant(selectedRestaurant.id, next);
-      return next;
-    });
-  };
-
-  const clearCart = () => setCart([]);
-
-  const subtotal = cart.reduce((s, it) => s + it.price * it.qty, 0);
   const deliveryFeeNumber = selectedRestaurant?.raw?.delivery_fee != null ? Number(selectedRestaurant.raw.delivery_fee) : 0;
-  const total = subtotal + (Number.isFinite(deliveryFeeNumber) ? deliveryFeeNumber : 0);
 
   const handleCheckout = async () => {
     if (checkoutLoading) return;
     if (!selectedRestaurant) return toast.error("No restaurant selected");
-    if (cart.length === 0) return toast.error("Cart is empty");
     if (!deliveryAddress) return toast.error("Enter delivery address");
     if (!phoneInput) return toast.error("Enter phone number");
     setCheckoutLoading(true);
     try {
       const payload = {
         restaurantId: selectedRestaurant.raw?.id ?? selectedRestaurant.id,
-        items: cart.map((c) => ({ menu_item_id: c.menu_item_id, quantity: c.qty, price: c.price })),
-        total,
-        subtotal,
         deliveryFee: deliveryFeeNumber,
         deliveryAddress,
         phone: phoneInput,
@@ -236,9 +184,6 @@ export default function Home() {
         setOrderConfirmation(created);
         setConfirmationOpen(true);
       }
-      // clear cart both state and storage
-      if (selectedRestaurant?.id) saveCartForRestaurant(selectedRestaurant.id, []);
-      clearCart();
       setMenuModalOpen(false);
     } catch (err) {
       console.error("Checkout error", err);
@@ -270,7 +215,7 @@ export default function Home() {
             <p className="text-xl md:text-2xl text-gray-600 mb-8 leading-relaxed">
               Authentic Algerian cuisine delivered fresh to your doorstep
             </p>
-            <p className="text-lg text-gray-500 mb-12 font-arabic">
+            <p className="text-lg text-gray-500 mb-12 font-poppins">
               طبيب الجوع - دواء الجوع على بابك
             </p>
 
@@ -509,21 +454,15 @@ export default function Home() {
                 </div>
                 <div className="space-y-4 max-h-[60vh] overflow-auto pr-2">
                   {currentMenu.length === 0 ? <div>No menu items</div> : currentMenu.map((mi: any) => {
-                    const lineQty = cart.find(c => Number(c.menu_item_id) === Number(mi.id))?.qty ?? 0;
-                    const lineTotal = (Number(mi.price || 0)) * lineQty;
                     return (
                       <div key={mi.id} className="flex items-center justify-between p-3 border rounded">
                         <div>
                           <div className="font-semibold">{mi.name}</div>
                           <div className="text-sm text-gray-500">{mi.description}</div>
-                          {lineQty > 0 && <div className="text-xs text-gray-500 mt-1">In cart: {lineQty} — Line total: {new Intl.NumberFormat("ar-DZ", { style: "currency", currency: "DZD", minimumFractionDigits: 0 }).format(lineTotal)}</div>}
                         </div>
                         <div className="flex items-center space-x-3">
                           <div className="font-semibold">{new Intl.NumberFormat("ar-DZ", { style: "currency", currency: "DZD", minimumFractionDigits: 0 }).format(Number(mi.price || 0))}</div>
                           <div className="flex items-center space-x-2">
-                            <button onClick={() => updateQty(Number(mi.id), Math.max(0, lineQty - 1))} className="px-2 py-1 border rounded">-</button>
-                            <button onClick={() => addToCart(mi)} className="px-3 py-1 bg-orange-500 text-white rounded">+ Add</button>
-                            <button onClick={() => updateQty(Number(mi.id), lineQty + 1)} className="px-2 py-1 border rounded">+</button>
                           </div>
                         </div>
                       </div>
@@ -535,24 +474,14 @@ export default function Home() {
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-semibold mb-2">Your Cart</h4>
                 <div className="space-y-3 max-h-[40vh] overflow-auto">
-                  {cart.length === 0 ? <div className="text-sm text-gray-500">Cart empty</div> : cart.map((c) => (
-                    <div key={c.menu_item_id} className="flex items-center justify-between">
                       <div>
-                        <div className="font-medium">{c.name}</div>
-                        <div className="text-sm text-gray-500">Unit: {new Intl.NumberFormat("ar-DZ", { style: "currency", currency: "DZD", minimumFractionDigits: 0 }).format(c.price)} • Line: {new Intl.NumberFormat("ar-DZ", { style: "currency", currency: "DZD", minimumFractionDigits: 0 }).format(c.price * c.qty)}</div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <button className="px-2 border rounded" onClick={() => updateQty(c.menu_item_id, c.qty - 1)}>-</button>
-                        <div>{c.qty}</div>
-                        <button className="px-2 border rounded" onClick={() => updateQty(c.menu_item_id, c.qty + 1)}>+</button>
                       </div>
                     </div>
-                  ))}
                 </div>
                 <div className="mt-4 border-t pt-3">
-                  <div className="flex justify-between text-sm text-gray-600"><span>Subtotal</span><span>{new Intl.NumberFormat("ar-DZ", { style: "currency", currency: "DZD", minimumFractionDigits: 0 }).format(subtotal)}</span></div>
                   <div className="flex justify-between text-sm text-gray-600"><span>Delivery</span><span>{new Intl.NumberFormat("ar-DZ", { style: "currency", currency: "DZD", minimumFractionDigits: 0 }).format(deliveryFeeNumber)}</span></div>
-                  <div className="flex justify-between font-semibold mt-2"><span>Total</span><span>{new Intl.NumberFormat("ar-DZ", { style: "currency", currency: "DZD", minimumFractionDigits: 0 }).format(total)}</span></div>
                 </div>
 
                 <div className="mt-4 space-y-2">
@@ -560,12 +489,10 @@ export default function Home() {
                   <input placeholder="Phone" value={phoneInput} onChange={(e) => setPhoneInput(e.target.value)} className="w-full border px-3 py-2 rounded" />
                   <button onClick={handleCheckout} disabled={checkoutLoading} className="w-full mt-2 bg-green-600 text-white px-4 py-2 rounded disabled:opacity-50">{checkoutLoading ? "Placing..." : "Confirm & Pay"}</button>
                 </div>
-              </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
-
       {/* Confirmation Modal (order placed successfully) */}
       <AnimatePresence>
         {confirmationOpen && orderConfirmation && (

@@ -66,7 +66,7 @@ export default function Footer() {
                 <div className="w-12 h-12 bg-gradient-to-br from-primary to-terracotta rounded-xl flex items-center justify-center">
                   <span className="text-white font-bold text-xl">T</span>
                 </div>
-                <span className="text-2xl font-bold font-arabic">Tbib El Jou3</span>
+                <span className="text-2xl font-bold font-poppins">Tbib El Jou3</span>
               </div>
               <p className="text-gray-300 mb-6 leading-relaxed">
                 Bringing authentic Algerian cuisine to your doorstep. Experience the rich flavors

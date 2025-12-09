@@ -61,7 +61,7 @@ export default function About() {
             transition={{ duration: 0.8 }}
             className="text-center max-w-4xl mx-auto"
           >
-            <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 font-arabic">
+            <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 font-poppins">
               About <span className="text-gradient">Tbib El Jou3</span>
             </h1>
             <p className="text-xl text-gray-600 mb-8 leading-relaxed">

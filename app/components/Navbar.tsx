@@ -9,12 +9,10 @@ import {
   MapPin,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useCart } from "../context/CartContext";
 import { useSession } from "next-auth/react";
 import UserGreeting from "../components/greeting";
 
 export default function Navbar() {
-  const { itemCount } = useCart();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { data: session } = useSession();
@@ -59,7 +57,7 @@ export default function Navbar() {
               <span className="text-2xl font-bold font-poppins text-gray-900 group-hover:text-orange-500 transition-colors">
                 Tbib El Jou3
               </span>
-              <span className="text-xs text-gray-500 font-arabic">طبيب الجوع</span>
+              <span className="text-xs text-gray-500 font-poppins">طبيب الجوع</span>
             </div>
           </Link>
 
@@ -79,23 +77,6 @@ export default function Navbar() {
 
           {/* Right Side Actions */}
           <div className="flex items-center space-x-4">
-            {/* Cart */}
-            <Link
-              href="/cart"
-              className="relative p-2 text-gray-700 hover:text-orange-500 transition-colors group"
-            >
-              <ShoppingCart className="w-6 h-6 group-hover:scale-110 transition-transform" />
-              {itemCount > 0 && (
-                <motion.span
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="absolute -top-1 -right-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium font-poppins shadow-lg"
-                >
-                  {itemCount > 99 ? "99+" : itemCount}
-                </motion.span>
-              )}
-            </Link>
-
             {/* User Section */}
             {session ? (
               <UserGreeting />
