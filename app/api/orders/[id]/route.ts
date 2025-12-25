@@ -8,9 +8,12 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const orderId = params.id;
+    const { id: orderId } = await params;
     const orderRes = await pool.query(
       `SELECT o.*, r.name AS restaurant_name, u.email AS user_email, u.name AS user_name
        FROM orders o
@@ -19,7 +22,8 @@ export async function GET(request: Request, { params }: { params: { id: string }
        WHERE o.id = $1`,
       [orderId]
     );
-    if (orderRes.rows.length === 0) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (orderRes.rows.length === 0)
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
     const order = orderRes.rows[0];
 
     const itemsRes = await pool.query(
@@ -35,16 +39,23 @@ export async function GET(request: Request, { params }: { params: { id: string }
       [orderId]
     );
 
-    return NextResponse.json({ ...order, items: itemsRes.rows, tracking: trackingRes.rows });
+    return NextResponse.json({
+      ...order,
+      items: itemsRes.rows,
+      tracking: trackingRes.rows,
+    });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Failed" }, { status: 500 });
   }
 }
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const orderId = params.id;
+    const { id: orderId } = await params;
     const body = await request.json();
 
     const session = await getServerSession(authOptions);
@@ -71,48 +82,68 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       fields.push(`payment_status = $${idx++}`);
       values.push(body.payment_status);
     }
-    // If client requests assignment to a driver, write an order_tracking entry (schema has order_tracking)
+    // If client requests assignment to a driver
     const assignDriverId = body.assignDeliveryUserId ?? body.assignDriverId;
 
     if (fields.length === 0 && !assignDriverId) {
-      return NextResponse.json({ error: "No fields to update" }, { status: 400 });
+      return NextResponse.json(
+        { error: "No fields to update" },
+        { status: 400 }
+      );
     }
 
-    // Update orders table fields if any
     let updated: any = null;
+
+    // Update orders table fields if any
     if (fields.length > 0) {
       values.push(orderId);
-      const q = `UPDATE orders SET ${fields.join(", ")}, updated_at = NOW() WHERE id = $${idx} RETURNING *`;
+      const q = `UPDATE orders SET ${fields.join(
+        ", "
+      )}, updated_at = NOW() WHERE id = $${idx} RETURNING *`;
       const res = await pool.query(q, values);
       updated = res.rows[0];
     }
 
-    // Handle assignment via order_tracking
+    // Handle assignment: set delivery_user_id + tracking row
     if (assignDriverId) {
-      // find driver record id (delivery_drivers) for given user id
-      const driverRes = await pool.query("SELECT id FROM delivery_drivers WHERE user_id = $1", [assignDriverId]);
-      const driverRecordId = driverRes.rows.length ? driverRes.rows[0].id : null;
+      await pool.query(
+        `UPDATE orders SET delivery_user_id = $1, updated_at = NOW() WHERE id = $2`,
+        [assignDriverId, orderId]
+      );
 
-      // insert tracking row with notes set to 'assigned:DRIVER_ID'
       await pool.query(
         `INSERT INTO order_tracking (order_id, status, notes, created_at) VALUES ($1, $2, $3, NOW())`,
         [orderId, "assigned", `assigned:${assignDriverId}`]
       );
 
-      // also, if orders table has a column to mark assignment (not in your SQL), we skip that
-      // fetch latest order row to broadcast
-      const orderRes = await pool.query("SELECT * FROM orders WHERE id = $1", [orderId]);
+      const orderRes = await pool.query("SELECT * FROM orders WHERE id = $1", [
+        orderId,
+      ]);
       updated = orderRes.rows[0];
     }
 
     // broadcast updates
     try {
-      (Realtime as any).broadcastToRole("admin", { order: updated || null, type: "order:update" } as any);
-      (Realtime as any).broadcastToRole("delivery", { order: updated || null, type: "order:update" } as any);
+      (Realtime as any).broadcastToRole("admin", {
+        order: updated || null,
+        type: "order:update",
+      } as any);
+      (Realtime as any).broadcastToRole("delivery", {
+        order: updated || null,
+        type: "order:update",
+      } as any);
       if (assignDriverId) {
-        (Realtime as any).broadcastToUser(assignDriverId, { order: updated || null, type: "order:assigned" } as any);
+        (Realtime as any).broadcastToUser(assignDriverId, {
+          order: updated || null,
+          type: "order:assigned",
+        } as any);
       }
-      if (updated?.user_id) (Realtime as any).broadcastToUser(updated.user_id, { order: updated, type: "order:update" } as any);
+      if (updated?.user_id) {
+        (Realtime as any).broadcastToUser(updated.user_id, {
+          order: updated,
+          type: "order:update",
+        } as any);
+      }
     } catch (err) {
       console.error("Broadcast failed", err);
     }
@@ -124,11 +155,16 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const orderId = params.id;
+    const { id: orderId } = await params;
     await pool.query("DELETE FROM order_items WHERE order_id = $1", [orderId]);
-    await pool.query("DELETE FROM order_tracking WHERE order_id = $1", [orderId]);
+    await pool.query("DELETE FROM order_tracking WHERE order_id = $1", [
+      orderId,
+    ]);
     await pool.query("DELETE FROM orders WHERE id = $1", [orderId]);
     return NextResponse.json({ success: true });
   } catch (err) {

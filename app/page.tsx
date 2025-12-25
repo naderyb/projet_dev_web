@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, MapPin, Clock, ChefHat, Heart, ArrowRight } from "lucide-react";
+import { Clock, ChefHat, Heart, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import RestaurantCard from "./components/RestaurantCard";
 import toast from "react-hot-toast";
@@ -20,8 +20,6 @@ type Restaurant = {
 };
 
 export default function Home() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [location, setLocation] = useState("Algiers");
   const [loading, setLoading] = useState(true);
 
   // fetched restaurants from API
@@ -30,7 +28,9 @@ export default function Home() {
   const [menuCache, setMenuCache] = useState<Record<string, any[]>>({});
 
   // modal + cart state
-  const [selectedRestaurant, setSelectedRestaurant] = useState<any | null>(null);
+  const [selectedRestaurant, setSelectedRestaurant] = useState<any | null>(
+    null
+  );
   const [menuModalOpen, setMenuModalOpen] = useState(false);
   const [currentMenu, setCurrentMenu] = useState<any[]>([]);
   // cart: persisted per-restaurant in localStorage
@@ -52,21 +52,34 @@ export default function Home() {
         const data = await res.json();
         if (!mounted) return;
 
-        const mapped: Restaurant[] = (Array.isArray(data) ? data : []).map((r: any) => ({
-          id: String(r.id),
-          name: r.name || "Unnamed",
-          // use cuisine_type from API
-          type: r.cuisine_type || "",
-          // show address (or fallback to city text)
-          location: r.address || "",
-          rating: Number(r.average_rating ?? r.rating ?? 0) || 0,
-          // delivery_time label or compose from min/max
-          deliveryTime: r.delivery_time || (r.delivery_time_min && r.delivery_time_max ? `${r.delivery_time_min}-${r.delivery_time_max} min` : ""),
-          deliveryFee: r.delivery_fee != null ? new Intl.NumberFormat("ar-DZ", { style: "currency", currency: "DZD", minimumFractionDigits: 0 }).format(Number(r.delivery_fee)) : "—",
-          // API may not return images; keep placeholder
-          image: r.image || "/images/placeholder-restaurant.jpg",
-          featured: (Number(r.average_rating ?? 0) || 0) >= 4.5,
-        }));
+        const mapped: Restaurant[] = (Array.isArray(data) ? data : []).map(
+          (r: any) => ({
+            id: String(r.id),
+            name: r.name || "Unnamed",
+            // use cuisine_type from API
+            type: r.cuisine_type || "",
+            // show address (or fallback to city text)
+            location: r.address || "",
+            rating: Number(r.average_rating ?? r.rating ?? 0) || 0,
+            // delivery_time label or compose from min/max
+            deliveryTime:
+              r.delivery_time ||
+              (r.delivery_time_min && r.delivery_time_max
+                ? `${r.delivery_time_min}-${r.delivery_time_max} min`
+                : ""),
+            deliveryFee:
+              r.delivery_fee != null
+                ? new Intl.NumberFormat("ar-DZ", {
+                    style: "currency",
+                    currency: "DZD",
+                    minimumFractionDigits: 0,
+                  }).format(Number(r.delivery_fee))
+                : "—",
+            // API may not return images; keep placeholder
+            image: r.image || "/images/placeholder-restaurant.jpg",
+            featured: (Number(r.average_rating ?? 0) || 0) >= 4.5,
+          })
+        );
         setRestaurants(mapped);
       } catch (err) {
         console.error("Failed to load restaurants", err);
@@ -76,7 +89,9 @@ export default function Home() {
       }
     };
     load();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // small helper to fetch menu for a restaurant when needed
@@ -87,15 +102,17 @@ export default function Home() {
 
     try {
       // fetch latest menu from server
-      const res = await fetch(`/api/menu_items?restaurant_id=${encodeURIComponent(restaurantId)}`);
+      const res = await fetch(
+        `/api/menu_items?restaurant_id=${encodeURIComponent(restaurantId)}`
+      );
       if (!res.ok) throw new Error("Failed to fetch menu");
       const data = await res.json();
       // only cache when we actually received items (avoid caching "empty" result)
       if (Array.isArray(data) && data.length > 0) {
-        setMenuCache(prev => ({ ...prev, [restaurantId]: data }));
+        setMenuCache((prev) => ({ ...prev, [restaurantId]: data }));
       } else {
         // ensure we don't keep stale empty cache entry
-        setMenuCache(prev => {
+        setMenuCache((prev) => {
           const copy = { ...prev };
           delete copy[restaurantId];
           return copy;
@@ -117,7 +134,11 @@ export default function Home() {
     setPhoneInput("");
     try {
       const menu = await fetchMenuForRestaurant(restaurant.id);
-      setCurrentMenu(Array.isArray(menu) ? menu.map((mi: any) => ({ ...mi, price: Number(mi.price || 0) })) : []);
+      setCurrentMenu(
+        Array.isArray(menu)
+          ? menu.map((mi: any) => ({ ...mi, price: Number(mi.price || 0) }))
+          : []
+      );
     } catch (err) {
       console.error("Failed to load menu", err);
       setCurrentMenu([]);
@@ -133,8 +154,10 @@ export default function Home() {
     }
   };
 
-
-  const deliveryFeeNumber = selectedRestaurant?.raw?.delivery_fee != null ? Number(selectedRestaurant.raw.delivery_fee) : 0;
+  const deliveryFeeNumber =
+    selectedRestaurant?.raw?.delivery_fee != null
+      ? Number(selectedRestaurant.raw.delivery_fee)
+      : 0;
 
   const handleCheckout = async () => {
     if (checkoutLoading) return;
@@ -159,7 +182,9 @@ export default function Home() {
       const created = await res.json().catch(() => ({}));
       if (!res.ok) {
         console.error("Checkout failed", created);
-        toast.error(created?.error || created?.message || "Failed to create order");
+        toast.error(
+          created?.error || created?.message || "Failed to create order"
+        );
         setCheckoutLoading(false);
         return;
       }
@@ -169,8 +194,12 @@ export default function Home() {
       try {
         const orderId = created?.id ?? created?.order?.id ?? created?.order_id;
         if (orderId) {
-          const orderRes = await fetch(`/api/orders/${orderId}`, { credentials: "include" });
-          const orderData = orderRes.ok ? await orderRes.json().catch(()=>created) : created;
+          const orderRes = await fetch(`/api/orders/${orderId}`, {
+            credentials: "include",
+          });
+          const orderData = orderRes.ok
+            ? await orderRes.json().catch(() => created)
+            : created;
           setOrderConfirmation(orderData);
           setConfirmationOpen(true);
         } else {
@@ -196,86 +225,110 @@ export default function Home() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
+      {/* add something in the hero section */}
       <section className="relative pt-24 pb-16 overflow-hidden">
         {/* Zelij Pattern Background */}
         <div className="absolute inset-0 opacity-10">
           <div className="zelij-pattern w-full h-full"></div>
         </div>
-        
+
         <div className="container mx-auto px-4 relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="text-center max-w-4xl mx-auto"
           >
-            <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-6 font-poppins">
-              Welcome to <span className="text-gradient bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">Tbib El Jou3</span>
-            </h1>
-            <p className="text-xl md:text-2xl text-gray-600 mb-8 leading-relaxed">
-              Authentic Algerian cuisine delivered fresh to your doorstep
-            </p>
-            <p className="text-lg text-gray-500 mb-12 font-poppins">
-              طبيب الجوع - دواء الجوع على بابك
-            </p>
+            <div className="bg-white bg-opacity-5 backdrop-blur-md rounded-xl p-8 shadow-lg">
+              <div className="items-center">
+                <div>
+                  {/* add a space between tbib el jou3 and your hunger doctor */}
+                  <h1 className="text-5xl md:text-7xl flex justify-center font-bold text-gray-900 mb-6 font-poppins">
+                    <span className="text-gradient bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
+                      {" "}
+                      your hunger doctor
+                    </span>{" "}
+                    Tbib El Jou3
+                  </h1>
+                  <p className="text-xl md:text-2xl flex justify-center text-gray-700 mb-4 leading-relaxed">
+                    Discover the best homemade and restaurant dishes from across
+                    Algeria, delivered hot and fresh right to your door.
+                  </p>
+                  <p className="text-lg flex justify-center text-gray-500 mb-6 font-poppins">
+                    طبيب الجوع - من قلب الكوزينة الجزائرية إلى باب داركم، أطباق
+                    تقليدية، وجبات سريعة، وحلويات… كل شيء في بلاصة وحدة.
+                  </p>
 
-            {/* Search Bar */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="bg-white rounded-2xl shadow-xl p-6 max-w-2xl mx-auto"
-            >
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="text"
-                    placeholder="Search for restaurants, dishes..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all font-poppins"
-                  />
-                </div>
-                <div className="relative">
-                  <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <select
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    className="pl-12 pr-8 py-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all font-poppins"
-                  >
-                    <option value="Algiers">Algiers</option>
-                    <option value="Oran">Oran</option>
-                    <option value="Constantine">Constantine</option>
-                  </select>
-                </div>
-                <button className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-8 py-4 rounded-xl font-semibold hover:shadow-lg transition-all transform hover:scale-105 font-poppins">
-                  Search
-                </button>
-              </div>
-            </motion.div>
+                  {/* Feature badges */}
+                  <div className="flex flex-wrap gap-3 mb-8 justify-center">
+                    <span className="inline-flex items-center rounded-full bg-orange-50 text-orange-600 px-4 py-2 text-sm font-medium">
+                      <ChefHat className="w-4 h-4 mr-2" />
+                      Verified local chefs
+                    </span>
+                    <span className="inline-flex items-center rounded-full bg-green-50 text-green-600 px-4 py-2 text-sm font-medium">
+                      <Clock className="w-4 h-4 mr-2" />
+                      Average delivery under 15 min
+                    </span>
+                    <span className="inline-flex items-center rounded-full bg-red-50 text-red-600 px-4 py-2 text-sm font-medium">
+                      <Heart className="w-4 h-4 mr-2" />
+                      24/7 support & care
+                    </span>
+                  </div>
 
-            {/* Quick Stats */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.5 }}
-              className="flex justify-center space-x-8 mt-12"
-            >
-              <div className="text-center">
-                <div className="text-3xl font-bold text-orange-500 font-poppins">50K+</div>
-                <div className="text-gray-600 font-poppins">Happy Customers</div>
+                  {/* Primary actions */}
+                  <div className="flex justify-center gap-4 mb-3">
+                    <Link href="/restaurants">
+                      <button className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-8 py-4 rounded-xl font-bold hover:shadow-lg transition-all transform hover:scale-105 font-poppins w-full sm:w-auto">
+                        Browse restaurants
+                      </button>
+                    </Link>
+                    <Link href="/signup">
+                      <button className="border-2 border-orange-500 text-orange-500 px-8 py-4 rounded-xl font-bold hover:bg-orange-500 hover:text-white transition-all font-poppins w-full sm:w-auto">
+                        Become a partner
+                      </button>
+                    </Link>
+                  </div>
+                  <p className="text-sm text-gray-500 font-poppins justify-center flex">
+                    No minimum order • Cash on delivery available • Live order
+                    tracking (where supported)
+                  </p>
+                </div>
               </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-green-500 font-poppins">100+</div>
-                <div className="text-gray-600 font-poppins">Restaurants</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-red-500 font-poppins">25min</div>
-                <div className="text-gray-600 font-poppins">Avg Delivery</div>
-              </div>
-            </motion.div>
+
+              {/* Quick Stats */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.5 }}
+                className="flex flex-col sm:flex-row justify-center sm:space-x-8 mt-12 space-y-4 sm:space-y-0 text-center"
+              >
+                <div>
+                  <div className="text-3xl font-bold text-orange-500 font-poppins">
+                    50K+
+                  </div>
+                  <div className="text-gray-600 font-poppins">
+                    Orders delivered across Algiers
+                  </div>
+                </div>
+                <div>
+                  <div className="text-3xl font-bold text-green-500 font-poppins">
+                    100+
+                  </div>
+                  <div className="text-gray-600 font-poppins">
+                    Partner restaurants & home kitchens
+                  </div>
+                </div>
+                <div>
+                  <div className="text-3xl font-bold text-red-500 font-poppins">
+                    25 min
+                  </div>
+                  <div className="text-gray-600 font-poppins">
+                    Average delivery time in major cities
+                  </div>
+                </div>
+              </motion.div>
+            </div>
           </motion.div>
+          {/* add something interesting in the hero section */}
         </div>
       </section>
 
@@ -293,10 +346,11 @@ export default function Home() {
                 Featured <span className="text-green-500">Restaurants</span>
               </h2>
               <p className="text-xl text-gray-600 font-poppins">
-                Top-rated places in your area
+                Handpicked spots loved by our community for taste, speed and
+                consistency.
               </p>
             </div>
-            <Link 
+            <Link
               href="/restaurants"
               className="flex items-center space-x-2 text-orange-500 hover:text-orange-600 transition-colors font-poppins font-semibold"
             >
@@ -308,7 +362,10 @@ export default function Home() {
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="bg-gray-200 animate-pulse h-80 rounded-2xl"></div>
+                <div
+                  key={i}
+                  className="bg-gray-200 animate-pulse h-80 rounded-2xl"
+                ></div>
               ))}
             </div>
           ) : (
@@ -335,9 +392,7 @@ export default function Home() {
                   />
                   {/* Render the card beneath the overlay */}
                   <div className="pointer-events-none">
-                    <RestaurantCard
-                      {...restaurant}
-                    />
+                    <RestaurantCard {...restaurant} />
                   </div>
                 </motion.div>
               ))}
@@ -347,7 +402,7 @@ export default function Home() {
       </section>
 
       {/* Why Choose Us */}
-      <section className="py-16 bg-gradient-to-r from-green-50 to-orange-50">
+      <section className="py-16">
         <div className="container mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -356,7 +411,8 @@ export default function Home() {
             className="text-center mb-12"
           >
             <h2 className="text-4xl font-bold text-gray-900 mb-4 font-poppins">
-              Why Choose <span className="text-red-500">Tbib El Jou3?</span>
+              <span className="text-red-500">?</span>Why Choose{" "}
+              <span className="text-red-500">Tbib El Jou3</span>
             </h2>
             <p className="text-xl text-gray-600 font-poppins">
               We're more than just food delivery
@@ -368,21 +424,24 @@ export default function Home() {
               {
                 icon: <ChefHat className="w-12 h-12" />,
                 title: "Authentic Recipes",
-                description: "Traditional Algerian dishes prepared by expert chefs",
-                color: "text-orange-500"
+                description:
+                  "Traditional Algerian dishes prepared by expert chefs",
+                color: "text-orange-500",
               },
               {
                 icon: <Clock className="w-12 h-12" />,
                 title: "Fast Delivery",
-                description: "Fresh food delivered to your door in 30 minutes or less",
-                color: "text-green-500"
+                description:
+                  "Fresh food delivered to your door in 30 minutes or less",
+                color: "text-green-500",
               },
               {
                 icon: <Heart className="w-12 h-12" />,
                 title: "Made with Love",
-                description: "Every dish prepared with care and authentic ingredients",
-                color: "text-red-500"
-              }
+                description:
+                  "Every dish prepared with care and authentic ingredients",
+                color: "text-red-500",
+              },
             ].map((feature, index) => (
               <motion.div
                 key={index}
@@ -406,89 +465,118 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-16 bg-gradient-to-r from-orange-500 to-red-500 text-white">
-        <div className="container mx-auto px-4 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 font-poppins">
-              Hungry? Let's Order!
-            </h2>
-            <p className="text-xl mb-8 opacity-90 font-poppins">
-              Join thousands of satisfied customers
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/restaurants">
-                <button className="bg-white text-orange-500 px-8 py-4 rounded-xl font-bold hover:shadow-lg transition-all transform hover:scale-105 font-poppins">
-                  Order Now
-                </button>
-              </Link>
-              <Link href="/signup">
-                <button className="border-2 border-white text-white px-8 py-4 rounded-xl font-bold hover:bg-white hover:text-orange-500 transition-all font-poppins">
-                  Join Us
-                </button>
-              </Link>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
       {/* Menu Modal */}
       <AnimatePresence>
         {menuModalOpen && selectedRestaurant && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-            <motion.div initial={{ scale: 0.98 }} animate={{ scale: 1 }} exit={{ scale: 0.98 }} className="bg-white rounded-2xl w-full max-w-5xl p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
+          >
+            <motion.div
+              initial={{ scale: 0.98 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.98 }}
+              className="bg-white rounded-2xl w-full max-w-5xl p-6 grid grid-cols-1 lg:grid-cols-3 gap-6"
+            >
               <div className="lg:col-span-2">
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h3 className="text-2xl font-bold">{selectedRestaurant.name}</h3>
-                    <p className="text-sm text-gray-500">{selectedRestaurant.type} • {selectedRestaurant.location}</p>
-                    <p className="text-sm text-gray-500 mt-1">Delivery: {selectedRestaurant.deliveryTime} • Fee: {selectedRestaurant.deliveryFee}</p>
+                    <h3 className="text-2xl font-bold">
+                      {selectedRestaurant.name}
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      {selectedRestaurant.type} • {selectedRestaurant.location}
+                    </p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Delivery: {selectedRestaurant.deliveryTime} • Fee:{" "}
+                      {selectedRestaurant.deliveryFee}
+                    </p>
                   </div>
                   <div>
-                    <button onClick={() => setMenuModalOpen(false)} className="px-3 py-2 border rounded">Close</button>
+                    <button
+                      onClick={() => setMenuModalOpen(false)}
+                      className="px-3 py-2 border rounded"
+                    >
+                      Close
+                    </button>
                   </div>
                 </div>
                 <div className="space-y-4 max-h-[60vh] overflow-auto pr-2">
-                  {currentMenu.length === 0 ? <div>No menu items</div> : currentMenu.map((mi: any) => {
-                    return (
-                      <div key={mi.id} className="flex items-center justify-between p-3 border rounded">
-                        <div>
-                          <div className="font-semibold">{mi.name}</div>
-                          <div className="text-sm text-gray-500">{mi.description}</div>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <div className="font-semibold">{new Intl.NumberFormat("ar-DZ", { style: "currency", currency: "DZD", minimumFractionDigits: 0 }).format(Number(mi.price || 0))}</div>
-                          <div className="flex items-center space-x-2">
+                  {currentMenu.length === 0 ? (
+                    <div>No menu items</div>
+                  ) : (
+                    currentMenu.map((mi: any) => {
+                      return (
+                        <div
+                          key={mi.id}
+                          className="flex items-center justify-between p-3 border rounded"
+                        >
+                          <div>
+                            <div className="font-semibold">{mi.name}</div>
+                            <div className="text-sm text-gray-500">
+                              {mi.description}
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            <div className="font-semibold">
+                              {new Intl.NumberFormat("ar-DZ", {
+                                style: "currency",
+                                currency: "DZD",
+                                minimumFractionDigits: 0,
+                              }).format(Number(mi.price || 0))}
+                            </div>
+                            <div className="flex items-center space-x-2"></div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })
+                  )}
                 </div>
               </div>
 
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-semibold mb-2">Your Cart</h4>
                 <div className="space-y-3 max-h-[40vh] overflow-auto">
-                      <div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                      </div>
-                    </div>
+                  <div></div>
+                  <div className="flex items-center space-x-2"></div>
                 </div>
-                <div className="mt-4 border-t pt-3">
-                  <div className="flex justify-between text-sm text-gray-600"><span>Delivery</span><span>{new Intl.NumberFormat("ar-DZ", { style: "currency", currency: "DZD", minimumFractionDigits: 0 }).format(deliveryFeeNumber)}</span></div>
+              </div>
+              <div className="mt-4 border-t pt-3">
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>Delivery</span>
+                  <span>
+                    {new Intl.NumberFormat("ar-DZ", {
+                      style: "currency",
+                      currency: "DZD",
+                      minimumFractionDigits: 0,
+                    }).format(deliveryFeeNumber)}
+                  </span>
                 </div>
+              </div>
 
-                <div className="mt-4 space-y-2">
-                  <input placeholder="Delivery address" value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} className="w-full border px-3 py-2 rounded" />
-                  <input placeholder="Phone" value={phoneInput} onChange={(e) => setPhoneInput(e.target.value)} className="w-full border px-3 py-2 rounded" />
-                  <button onClick={handleCheckout} disabled={checkoutLoading} className="w-full mt-2 bg-green-600 text-white px-4 py-2 rounded disabled:opacity-50">{checkoutLoading ? "Placing..." : "Confirm & Pay"}</button>
-                </div>
+              <div className="mt-4 space-y-2">
+                <input
+                  placeholder="Delivery address"
+                  value={deliveryAddress}
+                  onChange={(e) => setDeliveryAddress(e.target.value)}
+                  className="w-full border px-3 py-2 rounded"
+                />
+                <input
+                  placeholder="Phone"
+                  value={phoneInput}
+                  onChange={(e) => setPhoneInput(e.target.value)}
+                  className="w-full border px-3 py-2 rounded"
+                />
+                <button
+                  onClick={handleCheckout}
+                  disabled={checkoutLoading}
+                  className="w-full mt-2 bg-green-600 text-white px-4 py-2 rounded disabled:opacity-50"
+                >
+                  {checkoutLoading ? "Placing..." : "Confirm & Pay"}
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
@@ -496,43 +584,142 @@ export default function Home() {
       {/* Confirmation Modal (order placed successfully) */}
       <AnimatePresence>
         {confirmationOpen && orderConfirmation && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black bg-opacity-50">
-            <motion.div initial={{ scale: 0.98 }} animate={{ scale: 1 }} exit={{ scale: 0.98 }} className="bg-white rounded-2xl w-full max-w-xl p-6">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black bg-opacity-50"
+          >
+            <motion.div
+              initial={{ scale: 0.98 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.98 }}
+              className="bg-white rounded-2xl w-full max-w-xl p-6"
+            >
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className="text-2xl font-bold">Order Confirmed</h3>
-                  <p className="text-sm text-gray-500">Order ID: {orderConfirmation.id ?? orderConfirmation.order?.id}</p>
+                  <p className="text-sm text-gray-500">
+                    Order ID:{" "}
+                    {orderConfirmation.id ?? orderConfirmation.order?.id}
+                  </p>
                 </div>
                 <div>
-                  <button onClick={() => { setConfirmationOpen(false); setOrderConfirmation(null); }} className="px-3 py-2 border rounded">Close</button>
+                  <button
+                    onClick={() => {
+                      setConfirmationOpen(false);
+                      setOrderConfirmation(null);
+                    }}
+                    className="px-3 py-2 border rounded"
+                  >
+                    Close
+                  </button>
                 </div>
               </div>
               <div className="space-y-3 max-h-[60vh] overflow-auto">
-                <div className="text-sm text-gray-600">Restaurant: {orderConfirmation.restaurant_name ?? orderConfirmation.restaurant?.name}</div>
+                <div className="text-sm text-gray-600">
+                  Restaurant:{" "}
+                  {orderConfirmation.restaurant_name ??
+                    orderConfirmation.restaurant?.name}
+                </div>
                 <div className="mt-3">
-                  {(orderConfirmation.items || orderConfirmation.order?.items || []).length === 0 ? (
+                  {(
+                    orderConfirmation.items ||
+                    orderConfirmation.order?.items ||
+                    []
+                  ).length === 0 ? (
                     <div className="text-sm text-gray-500">No items data</div>
                   ) : (
-                    (orderConfirmation.items || orderConfirmation.order?.items || []).map((it: any) => (
-                      <div key={it.id ?? `${it.menu_item_id}-${Math.random()}`} className="flex justify-between border-b py-2">
+                    (
+                      orderConfirmation.items ||
+                      orderConfirmation.order?.items ||
+                      []
+                    ).map((it: any) => (
+                      <div
+                        key={it.id ?? `${it.menu_item_id}-${Math.random()}`}
+                        className="flex justify-between border-b py-2"
+                      >
                         <div>
-                          <div className="font-medium">{it.name ?? it.menu_item_name}</div>
-                          <div className="text-xs text-gray-500">Qty: {it.quantity ?? it.qty}</div>
+                          <div className="font-medium">
+                            {it.name ?? it.menu_item_name}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Qty: {it.quantity ?? it.qty}
+                          </div>
                         </div>
-                        <div className="font-semibold">{new Intl.NumberFormat("ar-DZ",{style:"currency",currency:"DZD",minimumFractionDigits:0}).format(Number(it.price||0) * (it.quantity ?? it.qty ?? 1))}</div>
+                        <div className="font-semibold">
+                          {new Intl.NumberFormat("ar-DZ", {
+                            style: "currency",
+                            currency: "DZD",
+                            minimumFractionDigits: 0,
+                          }).format(
+                            Number(it.price || 0) * (it.quantity ?? it.qty ?? 1)
+                          )}
+                        </div>
                       </div>
                     ))
                   )}
                 </div>
                 <div className="mt-4 border-t pt-3">
-                  <div className="flex justify-between"><span className="text-sm text-gray-600">Subtotal</span><span className="font-semibold">{new Intl.NumberFormat("ar-DZ",{style:"currency",currency:"DZD",minimumFractionDigits:0}).format(orderConfirmation.subtotal ?? orderConfirmation.order?.subtotal ?? 0)}</span></div>
-                  <div className="flex justify-between"><span className="text-sm text-gray-600">Delivery</span><span className="font-semibold">{new Intl.NumberFormat("ar-DZ",{style:"currency",currency:"DZD",minimumFractionDigits:0}).format(orderConfirmation.delivery_fee ?? orderConfirmation.order?.deliveryFee ?? 0)}</span></div>
-                  <div className="flex justify-between mt-2"><span className="font-semibold">Total</span><span className="font-semibold">{new Intl.NumberFormat("ar-DZ",{style:"currency",currency:"DZD",minimumFractionDigits:0}).format(orderConfirmation.total ?? orderConfirmation.order?.total ?? 0)}</span></div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Subtotal</span>
+                    <span className="font-semibold">
+                      {new Intl.NumberFormat("ar-DZ", {
+                        style: "currency",
+                        currency: "DZD",
+                        minimumFractionDigits: 0,
+                      }).format(
+                        orderConfirmation.subtotal ??
+                          orderConfirmation.order?.subtotal ??
+                          0
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Delivery</span>
+                    <span className="font-semibold">
+                      {new Intl.NumberFormat("ar-DZ", {
+                        style: "currency",
+                        currency: "DZD",
+                        minimumFractionDigits: 0,
+                      }).format(
+                        orderConfirmation.delivery_fee ??
+                          orderConfirmation.order?.deliveryFee ??
+                          0
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex justify-between mt-2">
+                    <span className="font-semibold">Total</span>
+                    <span className="font-semibold">
+                      {new Intl.NumberFormat("ar-DZ", {
+                        style: "currency",
+                        currency: "DZD",
+                        minimumFractionDigits: 0,
+                      }).format(
+                        orderConfirmation.total ??
+                          orderConfirmation.order?.total ??
+                          0
+                      )}
+                    </span>
+                  </div>
                 </div>
               </div>
               <div className="mt-4 flex justify-end space-x-2">
-                <Link href="/orders"><button className="px-4 py-2 bg-orange-500 text-white rounded">View My Orders</button></Link>
-                <button onClick={() => { setConfirmationOpen(false); setOrderConfirmation(null); }} className="px-4 py-2 border rounded">Close</button>
+                <Link href="/orders">
+                  <button className="px-4 py-2 bg-orange-500 text-white rounded">
+                    View My Orders
+                  </button>
+                </Link>
+                <button
+                  onClick={() => {
+                    setConfirmationOpen(false);
+                    setOrderConfirmation(null);
+                  }}
+                  className="px-4 py-2 border rounded"
+                >
+                  Close
+                </button>
               </div>
             </motion.div>
           </motion.div>

@@ -112,39 +112,35 @@ export async function GET(request: Request) {
       return NextResponse.json(allOrders.rows);
     }
 
-    // Delivery: return orders assigned to this driver via order_tracking OR unassigned ready orders
+    // Delivery: assigned to this user OR unassigned ready orders
     if (role === "delivery") {
-      // find delivery_driver record for this user (if any)
       const userRes = await pool.query("SELECT id FROM users WHERE email = $1", [authUser.email]);
-      if (userRes.rows.length === 0) return NextResponse.json({ error: "User not found" }, { status: 404 });
+      if (userRes.rows.length === 0)
+        return NextResponse.json({ error: "User not found" }, { status: 404 });
       const userId = userRes.rows[0].id;
-
-      // find driver id from delivery_drivers table (if present)
-      const driverRes = await pool.query("SELECT id FROM delivery_drivers WHERE user_id = $1", [userId]);
-      const driverId = driverRes.rows.length ? driverRes.rows[0].id : null;
 
       const deliveryOrders = await pool.query(
         `
-        SELECT DISTINCT o.*, r.name as restaurant_name, u.name as customer_name, u.phone as customer_phone
+        SELECT o.*,
+               r.name as restaurant_name,
+               u.name as customer_name,
+               u.phone as customer_phone
         FROM orders o
         LEFT JOIN restaurants r ON o.restaurant_id = r.id
         LEFT JOIN users u ON o.user_id = u.id
-        LEFT JOIN order_tracking ot ON ot.order_id = o.id
-        WHERE 
+        WHERE
           (
-            $1::INT IS NOT NULL 
-            AND ot.status = 'assigned' 
-            AND ot.notes = ('assigned:' || $1::TEXT)
+            o.delivery_user_id = $1
+            AND o.status NOT IN ('delivered', 'cancelled')
           )
-          OR (
-            NOT EXISTS (
-              SELECT 1 FROM order_tracking ot2 WHERE ot2.order_id = o.id AND ot2.status = 'assigned'
-            )
-            AND o.status IN ('accepted','preparing','ready_for_pickup')
+          OR
+          (
+            o.delivery_user_id IS NULL
+            AND o.status IN ('accepted', 'preparing', 'ready_for_pickup')
           )
         ORDER BY o.created_at DESC
         `,
-        [driverId]
+        [userId]
       );
 
       return NextResponse.json(deliveryOrders.rows);
@@ -152,21 +148,22 @@ export async function GET(request: Request) {
 
     // Customer: return customer's orders
     const userResult = await pool.query("SELECT id FROM users WHERE email = $1", [authUser.email]);
-    if (userResult.rows.length === 0) return NextResponse.json({ error: "User not found" }, { status: 404 });
+    if (userResult.rows.length === 0) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
     const userId = userResult.rows[0].id;
-
-    const ordersResult = await pool.query(
-      `SELECT o.*, r.name as restaurant_name 
-       FROM orders o 
-       JOIN restaurants r ON o.restaurant_id = r.id 
-       WHERE o.user_id = $1 
+    const customerOrders = await pool.query(
+      `SELECT o.*, r.name as restaurant_name
+       FROM orders o
+       LEFT JOIN restaurants r ON o.restaurant_id = r.id
+       WHERE o.user_id = $1
        ORDER BY o.created_at DESC`,
       [userId]
     );
 
-    return NextResponse.json(ordersResult.rows);
-  } catch (error) {
-    console.error("Orders fetch error:", error);
+    return NextResponse.json(customerOrders.rows);
+  } catch (err) {
+    console.error(err);
     return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 });
   }
 }
