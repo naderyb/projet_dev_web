@@ -584,6 +584,7 @@ export default function AdminClient() {
     const colors: Record<string, string> = {
       pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
       confirmed: "bg-blue-100 text-blue-800 border-blue-200",
+      accepted: "bg-sky-100 text-sky-800 border-sky-200", // NEW
       preparing: "bg-orange-100 text-orange-800 border-orange-200",
       ready_for_pickup: "bg-purple-100 text-purple-800 border-purple-200",
       out_for_delivery: "bg-indigo-100 text-indigo-800 border-indigo-200",
@@ -597,6 +598,7 @@ export default function AdminClient() {
     const icons: Record<string, JSX.Element> = {
       pending: <Clock className="w-4 h-4" />,
       confirmed: <CheckCircle className="w-4 h-4" />,
+      accepted: <Truck className="w-4 h-4" />, // NEW
       preparing: <Package className="w-4 h-4" />,
       ready_for_pickup: <Package className="w-4 h-4" />,
       out_for_delivery: <Truck className="w-4 h-4" />,
@@ -700,6 +702,7 @@ export default function AdminClient() {
                   <option value="all">All Status</option>
                   <option value="pending">Pending</option>
                   <option value="confirmed">Confirmed</option>
+                  <option value="accepted">Accepted</option> {/* NEW */}
                   <option value="preparing">Preparing</option>
                   <option value="ready_for_pickup">Ready for Pickup</option>
                   <option value="out_for_delivery">Out for Delivery</option>
@@ -843,13 +846,13 @@ export default function AdminClient() {
                               </button>
                             </div>
                           </td>
+                          
                         </motion.tr>
                       ))}
                     </AnimatePresence>
                   </tbody>
                 </table>
               </div>
-
               {filteredOrders.length === 0 && (
                 <div className="text-center py-12">
                   <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
