@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
 import { Pool } from "pg";
-import * as Realtime from "../../../../lib/realtime";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../../../lib/auth";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -58,18 +55,6 @@ export async function PATCH(
     const { id: orderId } = await params;
     const body = await request.json();
 
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    const role = (session as any).user?.role;
-    const isAdmin = role === "admin";
-    const isDelivery = role === "delivery";
-
-    if (!isAdmin && !isDelivery) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
     const fields: string[] = [];
     const values: any[] = [];
     let idx = 1;
@@ -122,31 +107,11 @@ export async function PATCH(
       updated = orderRes.rows[0];
     }
 
-    // broadcast updates
-    try {
-      (Realtime as any).broadcastToRole("admin", {
-        order: updated || null,
-        type: "order:update",
-      } as any);
-      (Realtime as any).broadcastToRole("delivery", {
-        order: updated || null,
-        type: "order:update",
-      } as any);
-      if (assignDriverId) {
-        (Realtime as any).broadcastToUser(assignDriverId, {
-          order: updated || null,
-          type: "order:assigned",
-        } as any);
-      }
-      if (updated?.user_id) {
-        (Realtime as any).broadcastToUser(updated.user_id, {
-          order: updated,
-          type: "order:update",
-        } as any);
-      }
-    } catch (err) {
-      console.error("Broadcast failed", err);
-    }
+    // OPTIONAL: simple server-side log instead of client broadcast
+    console.log("order:update", {
+      orderId: updated?.id ?? (await params).id,
+      status: updated?.status,
+    });
 
     return NextResponse.json(updated);
   } catch (err) {

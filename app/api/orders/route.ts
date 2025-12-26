@@ -17,21 +17,49 @@ export async function POST(request: Request) {
     }
 
     // find user id
-    const userResult = await pool.query("SELECT id FROM users WHERE email = $1", [authUser.email]);
+    const userResult = await pool.query(
+      "SELECT id FROM users WHERE email = $1",
+      [authUser.email]
+    );
     if (userResult.rows.length === 0) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
     const userId = userResult.rows[0].id;
 
     const body = await request.json();
-    const { restaurantId, items, total, subtotal, deliveryFee, deliveryAddress, phone, notes } = body;
+    const {
+      restaurantId,
+      items,
+      total,
+      subtotal,
+      deliveryFee,
+      deliveryAddress,
+      phone,
+      notes,
+    } = body;
+    
+    if (!restaurantId) {
+      return NextResponse.json(
+        { error: "restaurantId is required" },
+        { status: 400 }
+      );
+    }
 
     // Create order
     const orderInsert = await pool.query(
       `INSERT INTO orders 
         (user_id, restaurant_id, total, subtotal, delivery_fee, delivery_address, phone, notes, created_at)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NOW()) RETURNING *`,
-      [userId, restaurantId, total, subtotal, deliveryFee ?? 0, deliveryAddress, phone, notes]
+      [
+        userId,
+        restaurantId,
+        total,
+        subtotal,
+        deliveryFee ?? 0,
+        deliveryAddress,
+        phone,
+        notes,
+      ]
     );
     const order = orderInsert.rows[0];
 
@@ -72,9 +100,14 @@ export async function POST(request: Request) {
     // Broadcast to admin and delivery roles so UIs receive update immediately
     try {
       await broadcastToRole("admin", { type: "order:created", order: payload });
-      await broadcastToRole("delivery", { type: "order:created", order: payload });
+      await broadcastToRole("delivery", {
+        type: "order:created",
+        order: payload,
+      });
       // also optional broadcast to all
-      try { await broadcastToRole("all", { type: "order:created", order: payload }); } catch(_) {}
+      try {
+        await broadcastToRole("all", { type: "order:created", order: payload });
+      } catch (_) {}
     } catch (bErr) {
       console.error("Realtime broadcast failed:", bErr);
     }
@@ -82,7 +115,10 @@ export async function POST(request: Request) {
     return NextResponse.json(payload, { status: 201 });
   } catch (error) {
     console.error("Order creation error:", error);
-    return NextResponse.json({ error: "Failed to create order" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to create order" },
+      { status: 500 }
+    );
   }
 }
 
@@ -114,7 +150,10 @@ export async function GET(request: Request) {
 
     // Delivery: assigned to this user OR unassigned ready orders
     if (role === "delivery") {
-      const userRes = await pool.query("SELECT id FROM users WHERE email = $1", [authUser.email]);
+      const userRes = await pool.query(
+        "SELECT id FROM users WHERE email = $1",
+        [authUser.email]
+      );
       if (userRes.rows.length === 0)
         return NextResponse.json({ error: "User not found" }, { status: 404 });
       const userId = userRes.rows[0].id;
@@ -147,7 +186,10 @@ export async function GET(request: Request) {
     }
 
     // Customer: return customer's orders
-    const userResult = await pool.query("SELECT id FROM users WHERE email = $1", [authUser.email]);
+    const userResult = await pool.query(
+      "SELECT id FROM users WHERE email = $1",
+      [authUser.email]
+    );
     if (userResult.rows.length === 0) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
@@ -164,6 +206,9 @@ export async function GET(request: Request) {
     return NextResponse.json(customerOrders.rows);
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch orders" },
+      { status: 500 }
+    );
   }
 }

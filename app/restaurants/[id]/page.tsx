@@ -60,6 +60,11 @@ export default function RestaurantDetailPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [showCartModal, setShowCartModal] = useState(false);
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (params.id) {
@@ -158,6 +163,58 @@ export default function RestaurantDetailPage() {
     0
   );
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const deliveryFee = Number(restaurant?.delivery_fee || 0);
+  const totalWithDelivery = cartTotal + deliveryFee;
+
+  const confirmOrder = async () => {
+    if (!cart.length) {
+      toast.error("Your cart is empty");
+      return;
+    }
+    if (!customerName || !customerPhone || !deliveryAddress) {
+      toast.error("Please fill all delivery details");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          restaurantId: restaurant!.id, // ✅ CRITICAL
+          items: cart.map((item) => ({
+            menuItemId: item.id, // cleaner mapping
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          subtotal: cartTotal,
+          deliveryFee,
+          total: totalWithDelivery,
+          deliveryAddress,
+          phone: customerPhone,
+          notes: null,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        throw new Error(err?.error || "Failed to create order");
+      }
+
+      setCart([]);
+      setShowCartModal(false);
+      toast.success("Order created successfully");
+    } catch (err) {
+      console.error("Confirm order failed", err);
+      toast.error(
+        err instanceof Error ? err.message : "Failed to confirm order"
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (loading || !restaurant) {
     return (
@@ -481,7 +538,7 @@ export default function RestaurantDetailPage() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => router.push("/cart")}
+                onClick={() => setShowCartModal(true)}
                 className="bg-gradient-to-r from-orange-500 to-amber-500 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 font-bold text-base"
               >
                 <div className="relative">
@@ -495,6 +552,159 @@ export default function RestaurantDetailPage() {
                 <span>{cartTotal.toFixed(0)} DA</span>
                 <ChevronRight className="w-4 h-4" />
               </motion.button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Cart Modal (local, not /cart route) */}
+        <AnimatePresence>
+          {showCartModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              onClick={() => setShowCartModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white rounded-2xl max-w-3xl w-full overflow-hidden shadow-2xl"
+              >
+                <div className="flex items-center justify-between px-4 py-3 border-b bg-gray-50">
+                  <h2 className="text-lg font-bold">Your Cart</h2>
+                  <button
+                    onClick={() => setShowCartModal(false)}
+                    className="text-sm text-gray-500 hover:text-gray-700"
+                  >
+                    Close
+                  </button>
+                </div>
+
+                <div className="p-4 max-h-[70vh] overflow-auto grid md:grid-cols-3 gap-4">
+                  {/* Items */}
+                  <div className="md:col-span-2 space-y-3 max-h-[60vh] overflow-auto pr-2">
+                    {cart.length === 0 ? (
+                      <div className="bg-gray-50 rounded p-4 text-sm text-gray-600 text-center">
+                        Your cart is empty.
+                      </div>
+                    ) : (
+                      cart.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between bg-gray-50 p-3 rounded"
+                        >
+                          <div>
+                            <div className="font-semibold text-sm">
+                              {item.name}
+                            </div>
+                            <div className="text-xs text-gray-600">
+                              {item.price} DA each
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center border rounded">
+                              <button
+                                onClick={() =>
+                                  updateCartQuantity(
+                                    item.id,
+                                    Math.max(0, item.quantity - 1)
+                                  )
+                                }
+                                className="px-2 py-1 text-xs"
+                              >
+                                -
+                              </button>
+                              <span className="px-3 text-sm">
+                                {item.quantity}
+                              </span>
+                              <button
+                                onClick={() =>
+                                  updateCartQuantity(item.id, item.quantity + 1)
+                                }
+                                className="px-2 py-1 text-xs"
+                              >
+                                +
+                              </button>
+                            </div>
+                            <div className="text-sm font-semibold">
+                              {(item.price * item.quantity).toFixed(0)} DA
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Summary + delivery form */}
+                  <div className="space-y-4 bg-gray-50 p-3 rounded">
+                    <div>
+                      <h3 className="text-sm font-semibold mb-1">
+                        Order summary
+                      </h3>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span>Subtotal</span>
+                        <span>{cartTotal.toFixed(0)} DA</span>
+                      </div>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span>Delivery</span>
+                        <span>{deliveryFee.toFixed(0)} DA</span>
+                      </div>
+                      <hr className="my-2" />
+                      <div className="flex justify-between text-sm font-semibold">
+                        <span>Total</span>
+                        <span>{totalWithDelivery.toFixed(0)} DA</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 text-xs">
+                      <h4 className="font-semibold">Delivery details</h4>
+                      <div>
+                        <label className="block text-gray-600 mb-1">Name</label>
+                        <input
+                          type="text"
+                          value={customerName}
+                          onChange={(e) => setCustomerName(e.target.value)}
+                          className="w-full border rounded px-2 py-1 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-gray-600 mb-1">
+                          Phone
+                        </label>
+                        <input
+                          type="tel"
+                          value={customerPhone}
+                          onChange={(e) => setCustomerPhone(e.target.value)}
+                          className="w-full border rounded px-2 py-1 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-gray-600 mb-1">
+                          Delivery address
+                        </label>
+                        <textarea
+                          value={deliveryAddress}
+                          onChange={(e) => setDeliveryAddress(e.target.value)}
+                          rows={3}
+                          className="w-full border rounded px-2 py-1 text-xs resize-none"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      disabled={submitting}
+                      onClick={confirmOrder}
+                      className="w-full mt-2 px-3 py-2 rounded bg-gradient-to-r from-orange-500 to-amber-500 text-white text-sm font-semibold disabled:opacity-60"
+                    >
+                      {submitting ? "Confirming..." : "Confirm order"}
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
