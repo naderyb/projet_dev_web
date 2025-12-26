@@ -81,6 +81,17 @@ export default function DeliveryDashboard() {
     fetchOrders();
   }, [fetchOrders]);
 
+  // hide global navbar while on delivery UI
+  useEffect(() => {
+    const el = document.getElementById("site-navbar");
+    if (!el) return;
+    const prevDisplay = el.style.display;
+    el.style.display = "none";
+    return () => {
+      el.style.display = prevDisplay ?? "";
+    };
+  }, []);
+
   // Realtime updates
   useRealtime("delivery", (msg: any) => {
     if (!msg) return;
@@ -450,6 +461,28 @@ export default function DeliveryDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-20 pb-12">
+      {/* Delivery-only navbar */}
+      <header className="fixed top-0 left-0 right-0 z-30 bg-white/90 backdrop-blur border-b border-gray-200">
+        <div className="container mx-auto px-4 max-w-7xl h-14 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Truck className="w-5 h-5 text-orange-500" />
+            <span className="font-semibold text-gray-900 text-sm">
+              Delivery Partner
+            </span>
+          </div>
+          <div className="flex items-center gap-4 text-xs sm:text-sm">
+            <span className="flex items-center gap-1 text-gray-600">
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  online ? "bg-green-500" : "bg-red-500"
+                } animate-pulse`}
+              />
+              {online ? "Online" : "Offline"}
+            </span>
+          </div>
+        </div>
+      </header>
+
       <div className="container mx-auto px-4 max-w-7xl">
         {/* Header */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
