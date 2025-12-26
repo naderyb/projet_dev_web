@@ -342,6 +342,27 @@ export default function DeliveryDashboard() {
     const items = order.items || order.order_items || [];
     const statusConfig = getStatusConfig(order.status);
 
+    // helper booleans for buttons
+    const isAssignedToMe =
+      order.delivery_user_id &&
+      String(order.delivery_user_id) === String(myUserId);
+
+    const canAccept =
+      !isAssignedToMe &&
+      (!order.delivery_user_id ||
+        String(order.delivery_user_id) === String(myUserId)) &&
+      ["pending", "confirmed", "preparing", "accepted", "ready_for_pickup"].includes(
+        order.status
+      );
+
+    const canPickup = isAssignedToMe &&
+      ["accepted", "ready_for_pickup"].includes(order.status);
+
+    // allow Delivered directly after Accept too
+    const canDeliver =
+      isAssignedToMe &&
+      ["out_for_delivery", "accepted"].includes(order.status);
+
     return (
       <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 overflow-hidden">
         <div className="p-5">
@@ -418,11 +439,8 @@ export default function DeliveryDashboard() {
           )}
 
           {/* Actions for active orders */}
-          <div className="flex gap-2">
-            {/* NEW: accept button for pending/confirmed/preparing */}
-            {(order.status === "pending" ||
-              order.status === "confirmed" ||
-              order.status === "preparing") && (
+          <div className="flex flex-wrap gap-2">
+            {canAccept && (
               <button
                 onClick={() => onAcceptClicked(order.id)}
                 disabled={!online}
@@ -433,7 +451,7 @@ export default function DeliveryDashboard() {
               </button>
             )}
 
-            {order.status === "ready_for_pickup" && (
+            {canPickup && (
               <button
                 onClick={() => onPickedUpClicked(order.id)}
                 className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
@@ -442,7 +460,8 @@ export default function DeliveryDashboard() {
                 Picked Up
               </button>
             )}
-            {order.status === "out_for_delivery" && (
+
+            {canDeliver && (
               <button
                 onClick={() => onDeliveredClicked(order.id)}
                 className="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
@@ -451,7 +470,7 @@ export default function DeliveryDashboard() {
                 Delivered
               </button>
             )}
-            {/* NEW: confirm delivery stats when status is already delivered */}
+
             {order.status === "delivered" &&
               !confirmedTodayIds.includes(Number(order.id)) && (
                 <button
@@ -462,6 +481,7 @@ export default function DeliveryDashboard() {
                   Confirm delivery
                 </button>
               )}
+
             <button
               onClick={() => setSelectedOrder(order)}
               className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors"
@@ -732,6 +752,70 @@ export default function DeliveryDashboard() {
                   </div>
                 )}
             </div>
+
+            {/* ACTION BUTTONS IN MODAL */}
+            {(() => {
+              const o = selectedOrder;
+              const isAssignedToMe =
+                o.delivery_user_id &&
+                String(o.delivery_user_id) === String(myUserId);
+              const canAccept =
+                !isAssignedToMe &&
+                (!o.delivery_user_id ||
+                  String(o.delivery_user_id) === String(myUserId)) &&
+                ["pending", "confirmed", "preparing", "accepted", "ready_for_pickup"].includes(
+                  o.status
+                );
+              const canPickup =
+                isAssignedToMe &&
+                ["accepted", "ready_for_pickup"].includes(o.status);
+              const canDeliver =
+                isAssignedToMe &&
+                ["out_for_delivery", "accepted"].includes(o.status);
+
+              return (
+                <div className="px-5 pb-5 pt-2 border-t flex flex-wrap gap-2">
+                  {canAccept && (
+                    <button
+                      onClick={() => onAcceptClicked(o.id)}
+                      disabled={!online}
+                      className="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Truck className="w-4 h-4" />
+                      Accept
+                    </button>
+                  )}
+                  {canPickup && (
+                    <button
+                      onClick={() => onPickedUpClicked(o.id)}
+                      className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      Picked Up
+                    </button>
+                  )}
+                  {canDeliver && (
+                    <button
+                      onClick={() => onDeliveredClicked(o.id)}
+                      className="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      Delivered
+                    </button>
+                  )}
+                  {o.status === "delivered" &&
+                    !confirmedTodayIds.includes(Number(o.id)) && (
+                      <button
+                        onClick={() => onConfirmDeliveryStats(o)}
+                        className="flex-1 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                        Confirm delivery
+                      </button>
+                    )}
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
