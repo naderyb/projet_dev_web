@@ -4,20 +4,23 @@ import getAuthUser from "../../../../lib/getAuthUser";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-export async function GET(request: NextRequest, context: { params: { id: string } }) {
-  try {
-    // await params as required by Next.js
-    const { id } = await (context as any).params;
-    const res = await pool.query("SELECT * FROM restaurants WHERE id = $1", [id]);
-    if (res.rows.length === 0) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    return NextResponse.json(res.rows[0]);
-  } catch (err) {
-    console.error("GET restaurant error", err);
-    return NextResponse.json({ error: "Failed" }, { status: 500 });
-  }
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+
+  const res = await pool.query("SELECT * FROM restaurants WHERE id = $1", [id]);
+  if (res.rows.length === 0)
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  return NextResponse.json(res.rows[0]);
 }
 
-export async function PUT(request: NextRequest, context: { params: { id: string } }) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     // require admin (NextAuth OR admin_jwt)
     const authUser = await getAuthUser(request);
@@ -25,7 +28,7 @@ export async function PUT(request: NextRequest, context: { params: { id: string 
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     // await params before use
-    const { id } = await (context as any).params;
+    const { id } = await params;
 
     const body = await request.json();
 
@@ -135,20 +138,18 @@ export async function PUT(request: NextRequest, context: { params: { id: string 
   }
 }
 
-export async function DELETE(request: NextRequest, context: { params: { id: string } }) {
-  try {
-    const authUser = await getAuthUser(request);
-    if (!authUser || authUser.role !== "admin") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    const { id } = await (context as any).params;
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const authUser = await getAuthUser(request);
+  if (!authUser || authUser.role !== "admin")
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    // delete menu items first
-    await pool.query("DELETE FROM menu_items WHERE restaurant_id = $1", [id]);
-    await pool.query("DELETE FROM restaurants WHERE id = $1", [id]);
-    return NextResponse.json({ ok: true });
-  } catch (err) {
-    console.error("DELETE restaurant error", err);
-    return NextResponse.json({ error: "Failed" }, { status: 500 });
-  }
+  const { id } = await params;
+
+  await pool.query("DELETE FROM menu_items WHERE restaurant_id = $1", [id]);
+  await pool.query("DELETE FROM restaurants WHERE id = $1", [id]);
+
+  return NextResponse.json({ ok: true });
 }
