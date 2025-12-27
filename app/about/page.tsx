@@ -112,18 +112,17 @@ export default function About() {
               <h2 className="text-4xl font-bold text-gray-900 mb-6">Our Story</h2>
               <div className="space-y-4 text-gray-600 leading-relaxed">
                 <p>
-                  Tbib El Jou3 was born from a simple idea: everyone should have access to 
-                  authentic, high-quality Algerian food, no matter where they are. Our founder, 
-                  Ahmed, grew up in a family where food was the centerpiece of every gathering.
+                  Tbib El Jou3 was born from a simple joke: with my friends, we were looking for
+                  a name for a projec...a name that sounds algerian...a name that's so iconic that everyone
+                  will be talking about it, AND, tbib el jou3 view the day.
                 </p>
                 <p>
-                  After moving to the city for work, he noticed how difficult it was to find 
-                  genuine Algerian cuisine that reminded him of home. That's when he decided 
-                  to create a platform that would connect people with the best traditional 
-                  restaurants and home chefs.
+                  The idea quickly evolved into a mission to connect people with the rich culinary
+                  traditions of Algeria. We started small, partnering with local restaurants to
+                  bring their authentic dishes to a wider audience.
                 </p>
                 <p>
-                  Today, we work with over 100 partner restaurants and have delivered millions 
+                  Today, we aim to work with over 100 partner restaurants and have delivered millions 
                   of meals to happy customers across Algeria. Every dish tells a story, and 
                   we're proud to be part of that narrative.
                 </p>
