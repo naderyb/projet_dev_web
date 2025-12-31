@@ -329,15 +329,16 @@ export default function DeliveryDashboard() {
 
     const mine = isOrderMine(order);
 
-    const canAccept =
-      !mine && ["pending", "confirmed", "preparing"].includes(order.status);
+    // Driver can accept new/unassigned orders
+    const canAccept = ["pending", "confirmed", "preparing"].includes(
+      order.status
+    );
 
-    const canPickup =
-      mine && ["accepted", "ready_for_pickup"].includes(order.status);
+    // Once order is accepted or ready, always show "Picked Up"
+    const canPickup = ["accepted", "ready_for_pickup"].includes(order.status);
 
-    // show Delivered after Accept OR when out_for_delivery
-    const canDeliver =
-      mine && ["accepted", "out_for_delivery"].includes(order.status);
+    // After pickup (out_for_delivery) or even directly from accepted, show "Delivered"
+    const canDeliver = ["accepted", "out_for_delivery"].includes(order.status);
 
     return (
       <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 overflow-hidden">
