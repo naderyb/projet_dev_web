@@ -332,72 +332,103 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Featured Restaurants */}
-      <section className="py-16">
-        <div className="container mx-auto px-4">
+      {/* About Us */}
+      <section>
+        <div className="container mx-auto px-4 py-16">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="flex justify-between items-center mb-12"
+            className="text-center mb-12"
           >
-            <div>
-              <h2 className="text-4xl font-bold text-gray-900 mb-4 font-poppins">
-                Featured <span className="text-green-500">Restaurants</span>
-              </h2>
-              <p className="text-xl text-gray-600 font-poppins">
-                Handpicked spots loved by our community for taste, speed and
-                consistency.
-              </p>
-            </div>
-            <Link
-              href="/restaurants"
-              className="flex items-center space-x-2 text-orange-500 hover:text-orange-600 transition-colors font-poppins font-semibold"
-            >
-              <span>View All</span>
-              <ArrowRight className="w-5 h-5" />
-            </Link>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4 font-poppins">
+              About <span className="text-red-500">Tbib El Jou3</span>
+            </h2>
+            <p className="text-xl text-gray-600 font-poppins">
+              Delivering authentic Algerian flavors with love and care
+            </p>
           </motion.div>
+          <div className="max-w-3xl mx-auto text-gray-700 font-poppins leading-relaxed relative">
+            {/* Decorative Moroccan/Algerian corner ornaments */}
+            <div className="absolute -top-8 -left-8 w-24 h-24 border-t-4 border-l-4 border-amber-600 opacity-30"></div>
+            <div className="absolute -top-8 -right-8 w-24 h-24 border-t-4 border-r-4 border-amber-600 opacity-30"></div>
+            <div className="absolute -bottom-8 -left-8 w-24 h-24 border-b-4 border-l-4 border-amber-600 opacity-30"></div>
+            <div className="absolute -bottom-8 -right-8 w-24 h-24 border-b-4 border-r-4 border-amber-600 opacity-30"></div>
 
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="bg-gray-200 animate-pulse h-80 rounded-2xl"
-                ></div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {restaurants.map((restaurant, index) => (
-                <motion.div
-                  key={restaurant.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.06 }}
-                  className="relative" /* make container positioning context for overlay */
-                >
-                  {/* overlay to capture clicks BEFORE any inner anchor/link in RestaurantCard */}
-                  <div
-                    // use mouseDown to intercept earlier than some link handlers
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleOpenRestaurant(restaurant);
-                    }}
-                    // cover whole card and be on top
-                    className="absolute inset-0 z-20 cursor-pointer"
-                    aria-hidden="true"
-                  />
-                  {/* Render the card beneath the overlay */}
-                  <div className="pointer-events-none">
-                    <RestaurantCard {...restaurant} />
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          )}
+            <motion.div
+              className="bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 p-8 rounded-lg shadow-xl border-2 border-amber-200 relative overflow-hidden"
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+            >
+              {/* Geometric pattern overlay */}
+              <div
+                className="absolute inset-0 opacity-5"
+                style={{
+                  backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 35px, currentColor 35px, currentColor 70px),
+                                  repeating-linear-gradient(-45deg, transparent, transparent 35px, currentColor 35px, currentColor 70px)`,
+                  color: "#d97706",
+                }}
+              ></div>
+
+              <motion.p
+                className="mb-6 text-lg relative z-10 first-letter:text-5xl first-letter:font-bold first-letter:text-amber-700 first-letter:float-left first-letter:mr-3 first-letter:mt-1"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                viewport={{ once: true }}
+              >
+                At Tbib El Jou3, we believe that food is more than just
+                sustenance — it's a way to connect with culture, family, and
+                tradition. Our mission is to bring the rich and diverse flavors
+                of Algerian cuisine right to your doorstep, whether you're
+                craving a hearty couscous, a spicy chorba, or a sweet baklava.
+              </motion.p>
+
+              {/* Decorative divider */}
+              <div className="flex items-center justify-center my-6">
+                <div className="h-px bg-amber-400 flex-grow"></div>
+                <div className="mx-4 text-amber-600">✦</div>
+                <div className="h-px bg-amber-400 flex-grow"></div>
+              </div>
+
+              <motion.p
+                className="mb-6 text-lg relative z-10"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+                viewport={{ once: true }}
+              >
+                Founded by a team of food enthusiasts and tech innovators, Tbib
+                El Jou3 started as a small platform connecting home cooks with
+                local food lovers. Today, we've grown into a trusted food
+                delivery service, partnering with both talented home chefs and
+                established restaurants across Algeria.
+              </motion.p>
+
+              {/* Decorative divider */}
+              <div className="flex items-center justify-center my-6">
+                <div className="h-px bg-amber-400 flex-grow"></div>
+                <div className="mx-4 text-amber-600">✦</div>
+                <div className="h-px bg-amber-400 flex-grow"></div>
+              </div>
+
+              <motion.p
+                className="text-lg relative z-10"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.6 }}
+                viewport={{ once: true }}
+              >
+                We take pride in our rigorous vetting process, ensuring that
+                every dish delivered through Tbib El Jou3 meets our high
+                standards for quality, authenticity, and taste. Our dedicated
+                delivery team works tirelessly to ensure your food arrives hot
+                and fresh, ready to be enjoyed.
+              </motion.p>
+            </motion.div>
+          </div>
         </div>
       </section>
 
