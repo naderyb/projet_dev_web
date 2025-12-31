@@ -2,12 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import {
-  Menu,
-  X,
-  ShoppingCart,
-  MapPin,
-} from "lucide-react";
+import { Menu, X, ShoppingCart, MapPin } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSession } from "next-auth/react";
 import UserGreeting from "../components/greeting";
@@ -38,9 +33,7 @@ export default function Navbar() {
       animate={{ y: 0 }}
       transition={{ duration: 0.5 }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled
-          ? "nav-glass shadow-lg"
-          : "bg-transparent"
+        scrolled ? "nav-glass shadow-lg" : "bg-transparent"
       }`}
     >
       <div className="container mx-auto px-4">
@@ -49,7 +42,9 @@ export default function Navbar() {
           <Link href="/" className="flex items-center space-x-3 group">
             <div className="relative">
               <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
-                <span className="text-white font-bold text-xl font-poppins">T</span>
+                <span className="text-white font-bold text-xl font-poppins">
+                  T
+                </span>
               </div>
               <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full animate-pulse"></div>
             </div>
@@ -57,7 +52,9 @@ export default function Navbar() {
               <span className="text-2xl font-bold font-poppins text-gray-900 group-hover:text-orange-500 transition-colors">
                 Tbib El Jou3
               </span>
-              <span className="text-xs text-gray-500 font-poppins">طبيب الجوع</span>
+              <span className="text-xs text-gray-500 font-poppins">
+                طبيب الجوع
+              </span>
             </div>
           </Link>
 
@@ -77,6 +74,17 @@ export default function Navbar() {
 
           {/* Right Side Actions */}
           <div className="flex items-center space-x-4">
+            {/* My Orders Link (visible when logged in) */}
+            {session && (
+              <Link
+                href="/orders"
+                className="text-gray-700 hover:text-orange-500 font-medium transition-colors relative group font-poppins hidden lg:inline-block"
+              >
+                My Orders
+                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-orange-500 group-hover:w-full transition-all duration-300"></span>
+              </Link>
+            )}
+
             {/* User Section */}
             {session ? (
               <UserGreeting />
@@ -139,6 +147,17 @@ export default function Navbar() {
                     {link.label}
                   </Link>
                 ))}
+
+                {/* Mobile My Orders Link */}
+                {session && (
+                  <Link
+                    href="/orders"
+                    className="block px-4 py-3 text-gray-700 hover:text-orange-500 hover:bg-orange-50 transition-colors font-poppins"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    My Orders
+                  </Link>
+                )}
 
                 {/* Mobile Auth Links */}
                 {!session && (
