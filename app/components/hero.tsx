@@ -8,7 +8,7 @@ export default function HeroSection() {
   const stats = [
     { icon: <Users className="w-6 h-6" />, value: "50K+", label: "Happy Customers" },
     { icon: <Star className="w-6 h-6" />, value: "4.9", label: "Average Rating" },
-    { icon: <Clock className="w-6 h-6" />, value: "25min", label: "Delivery Time" },
+    { icon: <Clock className="w-6 h-6" />, value: "15min", label: "Delivery Time" },
   ];
 
   return (
@@ -125,7 +125,7 @@ export default function HeroSection() {
               >
                 <div className="flex items-center space-x-2">
                   <Clock className="w-5 h-5 text-emerald-500" />
-                  <span className="font-semibold">25 min</span>
+                  <span className="font-semibold">15 min</span>
                 </div>
               </motion.div>
             </div>
