@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Clock, ChefHat, Heart, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import RestaurantCard from "./components/RestaurantCard";
 import toast from "react-hot-toast";
 
@@ -21,6 +23,9 @@ type Restaurant = {
 
 export default function Home() {
   const [loading, setLoading] = useState(true);
+
+  const { data: session, status } = useSession();
+  const router = useRouter();
 
   // fetched restaurants from API
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
@@ -160,6 +165,17 @@ export default function Home() {
       : 0;
 
   const handleCheckout = async () => {
+    if (status === "loading") {
+      toast.error("Please wait while we check your session");
+      return;
+    }
+
+    if (!session) {
+      toast.error("You need to sign in to place an order");
+      router.push("/signin");
+      return;
+    }
+
     if (checkoutLoading) return;
     if (!selectedRestaurant) return toast.error("No restaurant selected");
     if (!deliveryAddress) return toast.error("Enter delivery address");
